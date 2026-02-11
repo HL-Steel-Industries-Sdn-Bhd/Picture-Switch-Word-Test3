@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Image Editor Pro+</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    background:#f5f5f5;
+}
+canvas{
+    border:1px solid #ccc;
+    margin-top:20px;
+    max-width:90%;
+}
+input,button{
+    margin:5px;
+    padding:6px 10px;
+}
+.control-box{
+    margin-top:15px;
+    padding:10px;
+    background:#fff;
+    display:inline-block;
+}
+button.small{
+    width:40px;
+}
+</style>
+</head>
+<body>
+
+<h2>Image Editor Pro+</h2>
+
+<h3>Main Background</h3>
+<input type="file" id="mainUpload" accept="image/*">
+
+<h3>ICON A</h3>
+<input type="file" id="iconAUpload" accept="image/*">
+
+<h3>ICON B</h3>
+<input type="file" id="iconBUpload" accept="image/*">
+
+<br><br>
+
+<input type="text" id="textInput" placeholder="Type your text here">
+
+<h3>Text Controls</h3>
+<div class="control-box">
+Move:
+<button class="small" onclick="moveText(0,-10)">↑</button>
+<button class="small" onclick="moveText(-10,0)">←</button>
+<button class="small" onclick="moveText(10,0)">→</button>
+<button class="small" onclick="moveText(0,10)">↓</button>
+<br>
+Size:
+<button onclick="changeFontSize(-5)">-</button>
+<span id="fontSizeDisplay">50</span>
+<button onclick="changeFontSize(5)">+</button>
+<br>
+<div id="color-picker"></div>
+</div>
+
+<h3>ICON A Controls</h3>
+<div class="control-box">
+Move:
+<button onclick="moveIcon('A',0,-10)">↑</button>
+<button onclick="moveIcon('A',-10,0)">←</button>
+<button onclick="moveIcon('A',10,0)">→</button>
+<button onclick="moveIcon('A',0,10)">↓</button>
+<br>
+Size:
+<button onclick="resizeIcon('A',-10)">-</button>
+<button onclick="resizeIcon('A',10)">+</button>
+</div>
+
+<h3>ICON B Controls</h3>
+<div class="control-box">
+Move:
+<button onclick="moveIcon('B',0,-10)">↑</button>
+<button onclick="moveIcon('B',-10,0)">←</button>
+<button onclick="moveIcon('B',10,0)">→</button>
+<button onclick="moveIcon('B',0,10)">↓</button>
+<br>
+Size:
+<button onclick="resizeIcon('B',-10)">-</button>
+<button onclick="resizeIcon('B',10)">+</button>
+</div>
+
+<br>
+<button onclick="downloadImage()">Download Image</button>
+<br>
+
+<canvas id="canvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+<script>
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let mainImage = new Image();
+let iconA = new Image();
+let iconB = new Image();
+
+let textX=0, textY=0, fontSize=50, textColor="#ffffff";
+
+let iconAX=50, iconAY=50, iconASize=100;
+let iconBX=200, iconBY=50, iconBSize=100;
+
+document.getElementById("mainUpload").addEventListener("change", e=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+        mainImage.onload=()=>{
+            canvas.width=mainImage.width;
+            canvas.height=mainImage.height;
+            textX=canvas.width*0.75;
+            textY=canvas.height*0.5;
+            draw();
+        }
+        mainImage.src=ev.target.result;
+    }
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+document.getElementById("iconAUpload").addEventListener("change", e=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+        iconA.src=ev.target.result;
+        iconA.onload=draw;
+    }
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+document.getElementById("iconBUpload").addEventListener("change", e=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+        iconB.src=ev.target.result;
+        iconB.onload=draw;
+    }
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+document.getElementById("textInput").addEventListener("input", draw);
+
+function draw(){
+    if(!mainImage.src) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(mainImage,0,0);
+
+    if(iconA.src){
+        ctx.drawImage(iconA,iconAX,iconAY,iconASize,iconASize);
+    }
+    if(iconB.src){
+        ctx.drawImage(iconB,iconBX,iconBY,iconBSize,iconBSize);
+    }
+
+    ctx.font="bold "+fontSize+"px Arial";
+    ctx.fillStyle=textColor;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(document.getElementById("textInput").value,textX,textY);
+}
+
+function moveText(dx,dy){ textX+=dx; textY+=dy; draw(); }
+function changeFontSize(v){ fontSize=Math.max(10,fontSize+v); document.getElementById("fontSizeDisplay").innerText=fontSize; draw(); }
+
+function moveIcon(type,dx,dy){
+    if(type==="A"){ iconAX+=dx; iconAY+=dy; }
+    if(type==="B"){ iconBX+=dx; iconBY+=dy; }
+    draw();
+}
+
+function resizeIcon(type,delta){
+    if(type==="A"){ iconASize=Math.max(20,iconASize+delta); }
+    if(type==="B"){ iconBSize=Math.max(20,iconBSize+delta); }
+    draw();
+}
+
+function downloadImage(){
+    const link=document.createElement("a");
+    link.download="final-image.png";
+    link.href=canvas.toDataURL("image/png");
+    link.click();
+}
+
+const pickr=Pickr.create({
+    el:'#color-picker',
+    theme:'classic',
+    default:'#ffffff',
+    components:{
+        preview:true,
+        opacity:true,
+        hue:true,
+        interaction:{hex:true,rgba:true,input:true,save:true}
+    }
+});
+
+pickr.on('save',(color)=>{
+    textColor=color.toHEXA().toString();
+    draw();
+});
+</script>
+
+</body>
+</html>
